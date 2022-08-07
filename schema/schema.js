@@ -1,6 +1,8 @@
 const {} = require("express-graphql");
-const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLList, GraphQLInt, GraphQLFloat, GraphQLNonNull } = require("graphql");
+const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLList, GraphQLInt, GraphQLFloat, GraphQLNonNull, GraphQLInputObjectType, graphqlSync } = require("graphql");
 const Course = require("../models/Courses/Course");
+const Instructor = require("../models/Instructor");
+const User = require("../models/User");
 
 //chapter topic type
 const ChapterTopicType = new GraphQLObjectType({
@@ -43,8 +45,39 @@ const CourseType = new GraphQLObjectType({
         introVideo: {type: GraphQLString},
         courseType: {type: GraphQLString}
     })
-})
+});
 
+
+//instructor type
+const InstructorType = new GraphQLObjectType({
+    name: "instructor",
+    fields:()=>({
+        id: {type: GraphQLID},
+        name: {type: GraphQLString},
+        study: {type: GraphQLString},
+        occupation: {type: GraphQLString},
+        image: {type: GraphQLString},
+        coursesId: {type: GraphQLList(GraphQLID)}
+    })
+});
+
+
+//user type
+const UserType = new GraphQLObjectType({
+    name: "user",
+    fields:()=>({
+        id: {type: GraphQLID},
+        name: {type: GraphQLString},
+        class: {type: GraphQLString},
+        group: {type: GraphQLString},
+        city: {type: GraphQLString},
+        institute: {type: GraphQLString},
+        image: {type: GraphQLString},
+        email: {type: GraphQLString},
+        password: {type: GraphQLString},
+        coursesId :{type: GraphQLList(GraphQLID)}
+    })
+})
 
 //root query
 const RootQuery = new GraphQLObjectType({
@@ -73,6 +106,40 @@ const RootQuery = new GraphQLObjectType({
             args: {courseType: {type: GraphQLString}},
             resolve(parent, args){
                 return Course.find({courseType: args.courseType})
+            }
+        },
+
+        //get all instructor
+        instructors:{
+            type: GraphQLList(InstructorType),
+            resolve(parent, args){
+                return Instructor.find();
+            }
+        },
+
+        //get instructor by id
+        instructor:{
+            type: InstructorType,
+            args: {id:{type: GraphQLID}},
+            resolve(parent, args){
+                return Instructor.findById(args.id);
+            }
+        },
+
+        //get all users
+        users:{
+            type: GraphQLList(UserType),
+            resolve(parent, args){
+                return User.find();
+            }
+        },
+
+        //get user by id
+        user:{
+            type: UserType,
+            args: {id:{type: GraphQLNonNull(GraphQLID)}},
+            resolve(parent, args){
+                return User.findById(args.id);
             }
         }
     }
@@ -126,7 +193,92 @@ const Mutation = new GraphQLObjectType({
                 })
                 return course.save();
             }
-        }
+        },
+
+        //delete course
+        deleteCourse:{
+            type: CourseType,
+            args:{id:{type: GraphQLNonNull(GraphQLID)}},
+            resolve(parent, args){
+                return Course.findByIdAndDelete(args.id);
+            }
+        },
+
+        //add instructor
+        addInstructor:{
+            type: InstructorType,
+            args:{
+                name: {type: GraphQLNonNull(GraphQLString)},
+                study: {type: GraphQLString},
+                occupation: {type: GraphQLString},
+                image: {type: GraphQLNonNull(GraphQLString)},
+                coursesId: {type: GraphQLList(GraphQLID)},
+            },
+            resolve(parent, args){
+                const instructor = new Instructor({
+                    name: args.name,
+                    study: args.study,
+                    occupation: args.occupation,
+                    image: args.image,
+                    coursesId: args.coursesId,
+                });
+                return instructor.save();
+            }
+        },
+
+        //delete instructor
+        deleteInstructor:{
+            type: InstructorType,
+            args:{
+                id: {type: GraphQLNonNull(GraphQLID)}
+            },
+            resolve(parent, args){
+                return Instructor.findByIdAndDelete(args.id);
+            }
+        },
+
+        //add user
+        addUser:{
+            type: UserType,
+            args:{
+                name: {type: GraphQLNonNull(GraphQLString)},
+                class: {type: GraphQLString},
+                group: {type: GraphQLString},
+                image: {type: GraphQLString},
+                city: {type: GraphQLString},
+                institute: {type: GraphQLString},
+                phone: {type: GraphQLString},
+                email: {type: GraphQLString},
+                password: {type: GraphQLString},
+                coursesId: {type: GraphQLList(GraphQLID)},
+            },
+            resolve(parent, args){
+                const newUser = new User({
+                    name: args.name,
+                    class: args.class,
+                    group: args.group,
+                    image: args.image,
+                    city: args.city,
+                    institute: args.institute,
+                    phone: args.phone,
+                    email: args.email,
+                    password: args.password,
+                    coursesId: args.coursesId
+                });
+                return newUser.save();
+            }
+        },
+
+        //delete instructor
+        deleteUser:{
+            type: UserType,
+            args:{
+                id: {type: GraphQLNonNull(GraphQLID)}
+            },
+            resolve(parent, args){
+                return User.findByIdAndDelete(args.id);
+            }
+        },
     }
     
 })
